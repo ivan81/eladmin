@@ -120,4 +120,17 @@ public interface RoleService {
      * @return 权限信息
      */
     List<GrantedAuthority> mapToGrantedAuthorities(UserDto user);
+
+    /**
+     * 验证是否被用户关联
+     * @param ids /
+     */
+    void verification(Set<Long> ids);
+
+    /**
+     * 根据菜单Id查询
+     * @param menuIds /
+     * @return /
+     */
+    List<Role> findInMenuId(List<Long> menuIds);
 }

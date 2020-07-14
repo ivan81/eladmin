@@ -67,9 +67,9 @@ public class DeptController {
 
     @Log("查询部门")
     @ApiOperation("查询部门:根据ID获取同级与上级数据")
-    @GetMapping("/superior")
+    @PostMapping("/superior")
     @PreAuthorize("@el.check('user:list','dept:list')")
-    public ResponseEntity<Object> getSuperior(@RequestParam List<Long> ids) {
+    public ResponseEntity<Object> getSuperior(@RequestBody List<Long> ids) {
         Set<DeptDto> deptDtos  = new LinkedHashSet<>();
         for (Long id : ids) {
             DeptDto deptDto = deptService.findById(id);
@@ -113,11 +113,9 @@ public class DeptController {
                 deptDtos = deptService.getDeleteDepts(deptList, deptDtos);
             }
         }
-        try {
-            deptService.delete(deptDtos);
-        }catch (Throwable e){
-            ThrowableUtil.throwForeignKeyException(e, "所选部门中存在岗位或者角色关联，请取消关联后再试");
-        }
+        // 验证是否被角色或用户关联
+        deptService.verification(deptDtos);
+        deptService.delete(deptDtos);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 }

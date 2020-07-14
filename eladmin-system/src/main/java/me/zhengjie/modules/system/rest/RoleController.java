@@ -27,10 +27,7 @@ import me.zhengjie.modules.system.service.dto.RoleDto;
 import me.zhengjie.modules.system.service.dto.RoleQueryCriteria;
 import me.zhengjie.modules.system.service.dto.RoleSmallDto;
 import me.zhengjie.utils.SecurityUtils;
-import me.zhengjie.utils.ThrowableUtil;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -136,11 +133,9 @@ public class RoleController {
             RoleDto role = roleService.findById(id);
             getLevels(role.getLevel());
         }
-        try {
-            roleService.delete(ids);
-        } catch (Throwable e){
-            ThrowableUtil.throwForeignKeyException(e, "所选角色存在用户关联，请取消关联后再试");
-        }
+        // 验证是否被用户关联
+        roleService.verification(ids);
+        roleService.delete(ids);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 

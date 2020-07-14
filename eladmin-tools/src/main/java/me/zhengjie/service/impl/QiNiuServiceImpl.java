@@ -43,7 +43,6 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletResponse;
@@ -57,7 +56,6 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 @CacheConfig(cacheNames = "qiNiu")
-@Transactional(propagation = Propagation.SUPPORTS, readOnly = true, rollbackFor = Exception.class)
 public class QiNiuServiceImpl implements QiNiuService {
 
     private final QiNiuConfigRepository qiNiuConfigRepository;
@@ -67,6 +65,25 @@ public class QiNiuServiceImpl implements QiNiuService {
     private Long maxSize;
 
     @Override
+    @Cacheable(key = "'config'")
+    public QiniuConfig find() {
+        Optional<QiniuConfig> qiniuConfig = qiNiuConfigRepository.findById(1L);
+        return qiniuConfig.orElseGet(QiniuConfig::new);
+    }
+
+    @Override
+    @CachePut(key = "'config'")
+    @Transactional(rollbackFor = Exception.class)
+    public QiniuConfig config(QiniuConfig qiniuConfig) {
+        qiniuConfig.setId(1L);
+        String http = "http://", https = "https://";
+        if (!(qiniuConfig.getHost().toLowerCase().startsWith(http)||qiniuConfig.getHost().toLowerCase().startsWith(https))) {
+            throw new BadRequestException("外链域名必须以http://或者https://开头");
+        }
+        return qiNiuConfigRepository.save(qiniuConfig);
+    }
+
+    @Override
     public Object queryAll(QiniuQueryCriteria criteria, Pageable pageable){
         return PageUtil.toPage(qiniuContentRepository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root,criteria,criteriaBuilder),pageable));
     }
@@ -74,25 +91,6 @@ public class QiNiuServiceImpl implements QiNiuService {
     @Override
     public List<QiniuContent> queryAll(QiniuQueryCriteria criteria) {
         return qiniuContentRepository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root,criteria,criteriaBuilder));
-    }
-
-    @Override
-    @Cacheable(key = "'1'")
-    public QiniuConfig find() {
-        Optional<QiniuConfig> qiniuConfig = qiNiuConfigRepository.findById(1L);
-        return qiniuConfig.orElseGet(QiniuConfig::new);
-    }
-
-    @Override
-    @CachePut(key = "'1'")
-    @Transactional(rollbackFor = Exception.class)
-    public QiniuConfig update(QiniuConfig qiniuConfig) {
-        String http = "http://", https = "https://";
-        if (!(qiniuConfig.getHost().toLowerCase().startsWith(http)||qiniuConfig.getHost().toLowerCase().startsWith(https))) {
-            throw new BadRequestException("外链域名必须以http://或者https://开头");
-        }
-        qiniuConfig.setId(1L);
-        return qiNiuConfigRepository.save(qiniuConfig);
     }
 
     @Override
